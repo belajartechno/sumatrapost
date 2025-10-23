@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <title>Admin Panel - Portal Berita</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" rel="stylesheet" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f8f9fa; 
+            color: #333; 
+            overflow-x: hidden; 
+        }
+        .header { 
+            background-color: #fff; 
+            border-bottom: 1px solid #ddd; 
+            padding: 1rem 0; 
+            position: sticky; 
+            top: 0; 
+            z-index: 1000; 
+            transition: box-shadow 0.3s ease; 
+        }
+        .header.scrolled { box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .nav-link { color: #007bff; text-decoration: none; font-weight: 500; transition: color 0.2s ease; }
+        .nav-link:hover { color: #0056b3; }
+        .article-card { 
+            border: none; 
+            margin-bottom: 1.5rem; 
+            background-color: #fff; 
+            border-radius: 8px; 
+            padding: 1rem; 
+            transition: transform 0.3s ease, box-shadow 0.3s ease; 
+        }
+        .article-card:hover { transform: translateY(-5px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .article-card img { max-width: 120px; height: auto; border-radius: 4px; transition: opacity 0.3s ease; }
+        .article-card:hover img { opacity: 0.9; }
+        .action-btn { font-size: 0.9rem; cursor: pointer; color: #007bff; margin-left: 0.5rem; }
+        .action-btn:hover { color: #0056b3; }
+        .footer { background-color: #fff; padding: 1rem 0; border-top: 1px solid #ddd; text-align: center; color: #666; }
+        .content-section { 
+            background-color: #fff; 
+            padding: 1.5rem; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+            min-height: 200px; 
+            display: none; 
+        }
+        .content-section.active { display: block; }
+        .login-section { display: block; }
+        .chart-container { max-width: 100%; margin: 1.5rem auto; }
+        .container { max-width: 1200px; }
+        .pagination { justify-content: center; margin-top: 1.5rem; }
+        .error-message { text-align: center; color: #666; padding: 1rem; }
+        .loading-spinner { text-align: center; padding: 2rem; }
+        .modal-body { max-height: 70vh; overflow-y: auto; }
+        @media (max-width: 768px) {
+            .header { padding: 0.5rem 0; }
+            h1.h3 { font-size: 1.5rem; }
+            .nav-link { font-size: 0.9rem; }
+            .article-card { flex-direction: column; }
+            .article-card img { max-width: 100%; margin-bottom: 0.5rem; }
+            .content-section { padding: 1rem; }
+            .form-control, .btn { font-size: 0.9rem; }
+            .modal-dialog { margin: 0.5rem; }
+            .chart-container canvas { max-height: 200px; }
+        }
+        @media (max-width: 576px) {
+            .article-card img { max-width: 100%; }
+            .pagination { flex-wrap: wrap; }
+            .pagination .page-item { margin: 0.2rem; }
+            .action-btn { font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header" id="header">
+        <div class="container">
+            <h1 class="h3 mb-0">Admin Panel - Portal Berita</h1>
+            <nav class="mt-2 d-flex gap-3">
+                <a href="index.html" class="nav-link">Kembali ke Beranda</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mt-4">
+        <section id="login" class="content-section login-section" data-aos="fade-up" data-aos-duration="1000">
+            <h2 class="h4 mb-3">Login Admin</h2>
+            <form id="loginForm">
+                <div class="mb-3">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" class="form-control" id="username" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+        </section>
+
+        <section id="manage-news" class="content-section" data-aos="fade-up" data-aos-duration="1000">
+            <h2 class="h4 mb-3">Kelola Berita</h2>
+            <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addNewsModal">Tambah Berita</button>
+            <div id="admin-article-list" class="loading-spinner">Memuat berita...</div>
+            <nav aria-label="Pagination">
+                <ul class="pagination" id="admin-pagination"></ul>
+            </nav>
+        </section>
+
+        <section id="manage-opini" class="content-section" data-aos="fade-up" data-aos-duration="1000">
+            <h2 class="h4 mb-3">Kelola Opini</h2>
+            <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addOpiniModal">Tambah Opini</button>
+            <div id="admin-opini-list" class="loading-spinner">Memuat opini...</div>
+            <nav aria-label="Pagination">
+                <ul class="pagination" id="admin-opini-pagination"></ul>
+            </nav>
+        </section>
+
+        <section id="settings" class="content-section" data-aos="fade-up" data-aos-duration="1000">
+            <h2 class="h4 mb-3">Pengaturan Hero Section</h2>
+            <form id="heroForm" class="mb-3">
+                <div class="mb-3">
+                    <label for="heroImage" class="form-label">Upload Background Hero Section (max 2MB, ideal 1200x200)</label>
+                    <input type="file" class="form-control" id="heroImage" accept="image/*">
+                </div>
+                <button type="submit" class="btn btn-primary">Simpan Background</button>
+            </form>
+        </section>
+
+        <section id="analytics" class="content-section" data-aos="fade-up" data-aos-duration="1000">
+            <h2 class="h4 mb-3">Analitik</h2>
+            <div class="chart-container">
+                <h5>Kunjungan Harian</h5>
+                <canvas id="visitsChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h5>Pembaca per Berita</h5>
+                <canvas id="readersChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h5>Pembaca per Opini</h5>
+                <canvas id="opiniChart"></canvas>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer" data-aos="fade-up" data-aos-duration="1000">
+        <div class="container">
+            <p class="mb-0">&copy; 2025 Portal Berita Dinamis. Hak cipta dilindungi.</p>
+        </div>
+    </footer>
+
+    <div class="modal fade" id="addNewsModal" tabindex="-1" aria-labelledby="addNewsModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addNewsModalLabel">Tambah Berita</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="newsForm">
+                        <input type="hidden" id="editId">
+                        <div class="mb-3">
+                            <label for="newsTitle" class="form-label">Judul</label>
+                            <input type="text" class="form-control" id="newsTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newsDescription" class="form-label">Deskripsi</label>
+                            <textarea class="form-control" id="newsDescription" rows="3" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newsCategory" class="form-label">Kategori</label>
+                            <select class="form-control" id="newsCategory" required>
+                                <option value="Nasional">Berita Nasional</option>
+                                <option value="Daerah">Berita Daerah</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newsSubcategory" class="form-label">Subkategori</label>
+                            <select class="form-control" id="newsSubcategory" required>
+                                <option value="Ekonomi">Ekonomi</option>
+                                <option value="Pendidikan">Pendidikan</option>
+                                <option value="Lifestyle">Lifestyle</option>
+                                <option value="Opini">Opini</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newsImage" class="form-label">Upload Gambar (max 2MB)</label>
+                            <input type="file" class="form-control" id="newsImage" accept="image/*">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Simpan</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="addOpiniModal" tabindex="-1" aria-labelledby="addOpiniModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addOpiniModalLabel">Tambah Opini</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="opiniForm">
+                        <input type="hidden" id="opiniEditId">
+                        <div class="mb-3">
+                            <label for="opiniTitle" class="form-label">Judul</label>
+                            <input type="text" class="form-control" id="opiniTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="opiniDescription" class="form-label">Deskripsi</label>
+                            <textarea class="form-control" id="opiniDescription" rows="3" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="opiniImage" class="form-label">Upload Gambar (max 2MB)</label>
+                            <input type="file" class="form-control" id="opiniImage" accept="image/*">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Simpan</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-storage.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize Firebase (Ganti dengan config Anda)
+            const firebaseConfig = {
+                apiKey: "YOUR_FIREBASE_API_KEY",
+                authDomain: "your-project-id.firebaseapp.com",
+                projectId: "your-project-id",
+                storageBucket: "your-project-id.appspot.com",
+                messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+                appId: "YOUR_APP_ID"
+            };
+            try {
+                firebase.initializeApp(firebaseConfig);
+            } catch (error) {
+                console.error('Firebase init error:', error);
+                document.querySelectorAll('.loading-spinner').forEach(el => {
+                    el.innerHTML = '<p class="error-message">Gagal memuat data: Konfigurasi Firebase salah.</p>';
+                });
+            }
+            const db = firebase.firestore?.() || {};
+            const storage = firebase.storage?.() || {};
+
+            // Initialize AOS
+            try {
+                AOS.init();
+            } catch (error) {
+                console.error('AOS init error:', error);
+            }
+
+            // Variables
+            const loginSection = document.getElementById('login');
+            const manageNews = document.getElementById('manage-news');
+            const manageOpini = document.getElementById('manage-opini');
+            const settings = document.getElementById('settings');
+            const analytics = document.getElementById('analytics');
+            let newsData = [];
+            let opinionData = [];
+            let currentAdminPage = 1;
+            let currentAdminOpiniPage = 1;
+            const itemsPerPage = 5;
+            const apiKey = 'YOUR_API_KEY'; // Ganti dengan API key NewsAPI Anda
+
+            // Toggle Sections
+            function toggleSections(showLogin) {
+                loginSection.style.display = showLogin ? 'block' : 'none';
+                manageNews.style.display = !showLogin ? 'block' : 'none';
+                manageOpini.style.display = !showLogin ? 'block' : 'none';
+                settings.style.display = !showLogin ? 'block' : 'none';
+                analytics.style.display = !showLogin ? 'block' : 'none';
+            }
+
+            toggleSections(true);
+
+            // Login
+            document.getElementById('loginForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                if (username === 'admin' && password === 'admin123') {
+                    toggleSections(false);
+                    fetchNews();
+                    fetchOpinions();
+                    renderCharts();
+                } else {
+                    alert('Username atau password salah!');
+                }
+            });
+
+            // Fetch News
+            async function fetchNews(category = '', subcategory = '') {
+                const articleList = document.getElementById('admin-article-list');
+                try {
+                    // Fetch from NewsAPI
+                    let url = `https://newsapi.org/v2/top-headlines?country=id&apiKey=${apiKey}`;
+                    if (subcategory && subcategory !== 'Opini') {
+                        url = `https://newsapi.org/v2/everything?q=${subcategory.toLowerCase()}&language=id&apiKey=${apiKey}`;
+                    }
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error('NewsAPI request failed');
+                    const data = await response.json();
+                    const realtimeNews = data.articles
+                        .filter(article => article.title && article.description && article.url)
+                        .map(article => ({
+                            id: `realtime-${Date.now()}-${Math.random()}`,
+                            title: article.title,
+                            description: article.description,
+                            url: article.url,
+                            urlToImage: article.urlToImage || 'https://via.placeholder.com/80x80?text=No+Image',
+                            views: Math.floor(Math.random() * 1000) + 100,
+                            category: category || 'Nasional',
+                            subcategory: subcategory || 'General',
+                            isRealtime: true,
+                            createdAt: new Date()
+                        }));
+
+                    // Fetch from Firestore
+                    let localNews = [];
+                    try {
+                        const newsSnapshot = await db.collection('news').get();
+                        localNews = newsSnapshot.docs.map(doc => ({
+                            id: doc.id,
+                            ...doc.data(),
+                            createdAt: doc.data().createdAt.toDate()
+                        })).filter(n => n.subcategory !== 'Opini');
+                    } catch (error) {
+                        console.error('Firestore fetch error:', error);
+                    }
+
+                    // Combine
+                    newsData = [...realtimeNews, ...localNews];
+                    localStorage.setItem('newsDataCache', JSON.stringify(localNews));
+                    renderAdminArticles();
+                } catch (error) {
+                    console.error('Error fetching news:', error);
+                    newsData = JSON.parse(localStorage.getItem('newsDataCache')) || [
+                        { id: 'dummy1', title: "Satu Tahun Prabowo-Gibran", description: "Laporan tentang capaian pemerintahan.", url: "#", urlToImage: "https://via.placeholder.com/80x80?text=Topik1", views: 1000, category: "Nasional", subcategory: "Ekonomi", createdAt: new Date() },
+                        { id: 'dummy2', title: "Dana Daerah Mengendap", description: "Analisis keuangan daerah.", url: "#", urlToImage: "https://via.placeholder.com/80x80?text=Topik2", views: 800, category: "Daerah", subcategory: "Ekonomi", createdAt: new Date() },
+                        { id: 'dummy3', title: "Hari Santri 2025", description: "Perayaan dan maknanya.", url: "#", urlToImage: "https://via.placeholder.com/80x80?text=Topik3", views: 600, category: "Nasional", subcategory: "Pendidikan", createdAt: new Date() }
+                    ];
+                    articleList.innerHTML = '<p class="error-message">Gagal memuat berita dari NewsAPI. Menampilkan data lokal.</p>';
+                    renderAdminArticles();
+                }
+            }
+
+            // Fetch Opinions
+            async function fetchOpinions() {
+                const opiniList = document.getElementById('admin-opini-list');
+                try {
+                    const snapshot = await db.collection('opinions').get();
+                    opinionData = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data(),
+                        createdAt: doc.data().createdAt.toDate()
+                    }));
+                    localStorage.setItem('opinionDataCache', JSON.stringify(opinionData));
+                    renderAdminOpini();
+                } catch (error) {
+                    console.error('Error fetching opinions:', error);
+                    opinionData = JSON.parse(localStorage.getItem('opinionDataCache')) || [
+                        { id: 'opini1', title: "Opini: Masa Depan Ekonomi Indonesia", description: "Pandangan tentang pertumbuhan ekonomi.", url: "#", urlToImage: "https://via.placeholder.com/80x80?text=Opini1", views: 500, createdAt: new Date() },
+                        { id: 'opini2', title: "Opini: Reformasi Pendidikan", description: "Tantangan dan solusi pendidikan.", url: "#", urlToImage: "https://via.placeholder.com/80x80?text=Opini2", views: 400, createdAt: new Date() }
+                    ];
+                    opiniList.innerHTML = '<p class="error-message">Gagal memuat opini dari Firestore. Menampilkan data lokal.</p>';
+                    renderAdminOpini();
+                }
+            }
+
+            // Render Admin Articles
+            function renderAdminArticles() {
+                const startIndex = (currentAdminPage - 1) * itemsPerPage;
+                const endIndex = startIndex + itemsPerPage;
+                const paginatedData = newsData.slice(startIndex, endIndex);
+                const articleList = document.getElementById('admin-article-list');
+                articleList.innerHTML = paginatedData.length ? '' : '<p class="error-message">Belum ada berita tersedia.</p>';
+                paginatedData.forEach((article, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'article-card d-flex';
+                    card.setAttribute('data-aos', 'fade-up');
+                    card.setAttribute('data-aos-delay', index * 100);
+                    card.innerHTML = `
+                        <img src="${article.urlToImage}" alt="${article.title}" class="me-3" onerror="this.src='https://via.placeholder.com/80x80?text=No+Image'">
+                        <div>
+                            <h5 class="mb-1"><a href="${article.url}" class="text-dark text-decoration-none">${article.title}</a></h5>
+                            <p class="text-muted small">${article.description || 'Deskripsi tidak tersedia.'}</p>
+                            <p class="text-muted small">Dibaca: ${article.views || 0} kali</p>
+                            ${!article.isRealtime ? `
+                                <span class="action-btn" onclick="editNews('${article.id}')"><i class="fas fa-edit"></i></span>
+                                <span class="action-btn" onclick="deleteNews('${article.id}')"><i class="fas fa-trash"></i></span>
+                            ` : ''}
+                        </div>
+                    `;
+                    articleList.appendChild(card);
+                });
+                renderAdminPagination();
+            }
+
+            // Render Admin Opini
+            function renderAdminOpini() {
+                const startIndex = (currentAdminOpiniPage - 1) * itemsPerPage;
+                const endIndex = startIndex + itemsPerPage;
+                const paginatedData = opinionData.slice(startIndex, endIndex);
+                const opiniList = document.getElementById('admin-opini-list');
+                opiniList.innerHTML = paginatedData.length ? '' : '<p class="error-message">Belum ada opini tersedia.</p>';
+                paginatedData.forEach((article, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'article-card d-flex';
+                    card.setAttribute('data-aos', 'fade-up');
+                    card.setAttribute('data-aos-delay', index * 100);
+                    card.innerHTML = `
+                        <img src="${article.urlToImage}" alt="${article.title}" class="me-3" onerror="this.src='https://via.placeholder.com/80x80?text=No+Image'">
+                        <div>
+                            <h5 class="mb-1"><a href="${article.url}" class="text-dark text-decoration-none">${article.title}</a></h5>
+                            <p class="text-muted small">${article.description || 'Deskripsi tidak tersedia.'}</p>
+                            <p class="text-muted small">Dibaca: ${article.views || 0} kali</p>
+                            <span class="action-btn" onclick="editOpini('${article.id}')"><i class="fas fa-edit"></i></span>
+                            <span class="action-btn" onclick="deleteOpini('${article.id}')"><i class="fas fa-trash"></i></span>
+                        </div>
+                    `;
+                    opiniList.appendChild(card);
+                });
+                renderAdminOpiniPagination();
+            }
+
+            // Render Admin Pagination
+            function renderAdminPagination() {
+                const totalPages = Math.ceil(newsData.length / itemsPerPage);
+                const pagination = document.getElementById('admin-pagination');
+                pagination.innerHTML = '';
+                if (totalPages <= 1) return;
+                for (let i = 1; i <= totalPages; i++) {
+                    const li = document.createElement('li');
+                    li.className = `page-item ${i === currentAdminPage ? 'active' : ''}`;
+                    li.innerHTML = `<a class="page-link" href="#" onclick="changeAdminPage(${i})">${i}</a>`;
+                    pagination.appendChild(li);
+                }
+            }
+
+            function renderAdminOpiniPagination() {
+                const totalPages = Math.ceil(opinionData.length / itemsPerPage);
+                const pagination = document.getElementById('admin-opini-pagination');
+                pagination.innerHTML = '';
+                if (totalPages <= 1) return;
+                for (let i = 1; i <= totalPages; i++) {
+                    const li = document.createElement('li');
+                    li.className = `page-item ${i === currentAdminOpiniPage ? 'active' : ''}`;
+                    li.innerHTML = `<a class="page-link" href="#" onclick="changeAdminOpiniPage(${i})">${i}</a>`;
+                    pagination.appendChild(li);
+                }
+            }
+
+            // Change Admin Page
+            window.changeAdminPage = function(page) {
+                currentAdminPage = page;
+                renderAdminArticles();
+            };
+
+            window.changeAdminOpiniPage = function(page) {
+                currentAdminOpiniPage = page;
+                renderAdminOpini();
+            };
+
+            // Handle News Form Submission
+            document.getElementById('newsForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const title = document.getElementById('newsTitle').value;
+                const description = document.getElementById('newsDescription').value;
+                const category = document.getElementById('newsCategory').value;
+                const subcategory = document.getElementById('newsSubcategory').value;
+                const fileInput = document.getElementById('newsImage');
+                const editId = document.getElementById('editId').value;
+
+                if (fileInput.files[0] && fileInput.files[0].size > 2 * 1024 * 1024) {
+                    alert('Ukuran gambar terlalu besar! Maksimal 2MB.');
+                    return;
+                }
+
+                let urlToImage = 'https://via.placeholder.com/80x80?text=No+Image';
+                try {
+                    if (fileInput.files[0]) {
+                        const fileRef = storage.ref(`images/news/${Date.now()}_${fileInput.files[0].name}`);
+                        await fileRef.put(fileInput.files[0]);
+                        urlToImage = await fileRef.getDownloadURL();
+                    }
+
+                    const article = {
+                        title,
+                        description,
+                        url: '#',
+                        urlToImage,
+                        views: editId ? (newsData.find(n => n.id === editId)?.views || 0) : 0,
+                        category,
+                        subcategory,
+                        createdAt: new Date()
+                    };
+
+                    if (subcategory === 'Opini') {
+                        if (editId) {
+                            const oldArticle = newsData.find(n => n.id === editId);
+                            if (oldArticle?.subcategory === 'Opini') {
+                                await db.collection('opinions').doc(editId).update(article);
+                            } else {
+                                await db.collection('news').doc(editId).delete();
+                                await db.collection('opinions').add(article);
+                            }
+                        } else {
+                            await db.collection('opinions').add(article);
+                        }
+                    } else {
+                        if (editId) {
+                            const oldArticle = newsData.find(n => n.id === editId);
+                            if (oldArticle?.subcategory === 'Opini') {
+                                await db.collection('opinions').doc(editId).delete();
+                                await db.collection('news').add(article);
+                            } else {
+                                await db.collection('news').doc(editId).update(article);
+                            }
+                        } else {
+                            await db.collection('news').add(article);
+                        }
+                    }
+                    bootstrap.Modal.getInstance(document.getElementById('addNewsModal')).hide();
+                    document.getElementById('newsForm').reset();
+                    document.getElementById('editId').value = '';
+                    document.getElementById('addNewsModalLabel').textContent = 'Tambah Berita';
+                    fetchNews();
+                    fetchOpinions();
+                    renderCharts();
+                } catch (error) {
+                    console.error('Error saving news:', error);
+                    alert('Gagal menyimpan berita. Cek koneksi atau penyimpanan.');
+                }
+            });
+
+            // Handle Opini Form Submission
+            document.getElementById('opiniForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const title = document.getElementById('opiniTitle').value;
+                const description = document.getElementById('opiniDescription').value;
+                const fileInput = document.getElementById('opiniImage');
+                const editId = document.getElementById('opiniEditId').value;
+
+                if (fileInput.files[0] && fileInput.files[0].size > 2 * 1024 * 1024) {
+                    alert('Ukuran gambar terlalu besar! Maksimal 2MB.');
+                    return;
+                }
+
+                let urlToImage = 'https://via.placeholder.com/80x80?text=No+Image';
+                try {
+                    if (fileInput.files[0]) {
+                        const fileRef = storage.ref(`images/opinions/${Date.now()}_${fileInput.files[0].name}`);
+                        await fileRef.put(fileInput.files[0]);
+                        urlToImage = await fileRef.getDownloadURL();
+                    }
+
+                    const article = {
+                        title,
+                        description,
+                        url: '#',
+                        urlToImage,
+                        views: editId ? (opinionData.find(o => o.id === editId)?.views || 0) : 0,
+                        createdAt: new Date()
+                    };
+
+                    if (editId) {
+                        await db.collection('opinions').doc(editId).update(article);
+                    } else {
+                        await db.collection('opinions').add(article);
+                    }
+                    bootstrap.Modal.getInstance(document.getElementById('addOpiniModal')).hide();
+                    document.getElementById('opiniForm').reset();
+                    document.getElementById('opiniEditId').value = '';
+                    document.getElementById('addOpiniModalLabel').textContent = 'Tambah Opini';
+                    fetchOpinions();
+                    renderCharts();
+                } catch (error) {
+                    console.error('Error saving opini:', error);
+                    alert('Gagal menyimpan opini. Cek koneksi atau penyimpanan.');
+                }
+            });
+
+            // Handle Hero Form Submission
+            document.getElementById('heroForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const fileInput = document.getElementById('heroImage');
+                if (fileInput.files[0] && fileInput.files[0].size > 2 * 1024 * 1024) {
+                    alert('Ukuran gambar terlalu besar! Maksimal 2MB.');
+                    return;
+                }
+
+                try {
+                    if (fileInput.files[0]) {
+                        const fileRef = storage.ref(`images/hero/hero-${Date.now()}`);
+                        await fileRef.put(fileInput.files[0]);
+                        const url = await fileRef.getDownloadURL();
+                        localStorage.setItem('heroBackground', url);
+                        alert('Background hero section berhasil diperbarui! Refresh laman pengunjung untuk melihat perubahan.');
+                    }
+                } catch (error) {
+                    console.error('Error uploading hero image:', error);
+                    alert('Gagal mengupload gambar hero. Cek koneksi atau penyimpanan.');
+                }
+            });
+
+            // Edit News
+            window.editNews = function(id) {
+                const article = newsData.find(n => n.id === id) || opinionData.find(o => o.id === id);
+                if (!article) return;
+                document.getElementById('newsTitle').value = article.title;
+                document.getElementById('newsDescription').value = article.description;
+                document.getElementById('newsCategory').value = article.category || 'Nasional';
+                document.getElementById('newsSubcategory').value = article.subcategory || 'General';
+                document.getElementById('editId').value = id;
+                document.getElementById('addNewsModalLabel').textContent = 'Edit Berita';
+                new bootstrap.Modal(document.getElementById('addNewsModal')).show();
+            };
+
+            // Delete News
+            window.deleteNews = async function(id) {
+                if (confirm('Hapus berita ini?')) {
+                    try {
+                        await db.collection('news').doc(id).delete();
+                        fetchNews();
+                        renderCharts();
+                    } catch (error) {
+                        console.error('Error deleting news:', error);
+                        alert('Gagal menghapus berita.');
+                    }
+                }
+            };
+
+            // Edit Opini
+            window.editOpini = function(id) {
+                const article = opinionData.find(o => o.id === id);
+                if (!article) return;
+                document.getElementById('opiniTitle').value = article.title;
+                document.getElementById('opiniDescription').value = article.description;
+                document.getElementById('opiniEditId').value = id;
+                document.getElementById('addOpiniModalLabel').textContent = 'Edit Opini';
+                new bootstrap.Modal(document.getElementById('addOpiniModal')).show();
+            };
+
+            // Delete Opini
+            window.deleteOpini = async function(id) {
+                if (confirm('Hapus opini ini?')) {
+                    try {
+                        await db.collection('opinions').doc(id).delete();
+                        fetchOpinions();
+                        renderCharts();
+                    } catch (error) {
+                        console.error('Error deleting opini:', error);
+                        alert('Gagal menghapus opini.');
+                    }
+                }
+            };
+
+            // Render Charts
+            function renderCharts() {
+                const visitsChart = document.getElementById('visitsChart');
+                const readersChart = document.getElementById('readersChart');
+                const opiniChart = document.getElementById('opiniChart');
+                try {
+                    new Chart(visitsChart, {
+                        type: 'line',
+                        data: {
+                            labels: ['2025-10-18', '2025-10-19', '2025-10-20', '2025-10-21', '2025-10-22', '2025-10-23'],
+                            datasets: [{ label: 'Kunjungan Harian', data: [500, 600, 750, 800, 900, 1000], borderColor: '#007bff', fill: false, tension: 0.4 }]
+                        },
+                        options: { scales: { y: { beginAtZero: true } }, responsive: true, maintainAspectRatio: false }
+                    });
+
+                    new Chart(readersChart, {
+                        type: 'bar',
+                        data: {
+                            labels: newsData.map(article => article.title.substring(0, 20) + (article.title.length > 20 ? '...' : '')),
+                            datasets: [{ label: 'Pembaca Berita', data: newsData.map(article => article.views || 0), backgroundColor: '#007bff' }]
+                        },
+                        options: { scales: { y: { beginAtZero: true } }, responsive: true, maintainAspectRatio: false }
+                    });
+
+                    new Chart(opiniChart, {
+                        type: 'bar',
+                        data: {
+                            labels: opinionData.map(article => article.title.substring(0, 20) + (article.title.length > 20 ? '...' : '')),
+                            datasets: [{ label: 'Pembaca Opini', data: opinionData.map(article => article.views || 0), backgroundColor: '#28a745' }]
+                        },
+                        options: { scales: { y: { beginAtZero: true } }, responsive: true, maintainAspectRatio: false }
+                    });
+                } catch (error) {
+                    console.error('Error rendering charts:', error);
+                    analytics.innerHTML = '<p class="error-message">Terjadi kesalahan saat memuat grafik.</p>';
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <title>Portal Berita Dinamis & Modern</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link href="https://unpkg.com/swiper@10.3.1/swiper-bundle.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f8f9fa; 
+            color: #333; 
+            scroll-behavior: smooth; 
+            overflow-x: hidden;
+        }
+        .header { 
+            background: url(${localStorage.getItem('heroBackground') || 'https://via.placeholder.com/1200x200?text=Hero+Background'}) center/cover no-repeat; 
+            border-bottom: 1px solid #ddd; 
+            padding: 1rem 0; 
+            position: sticky; 
+            top: 0; 
+            z-index: 1000; 
+            transition: box-shadow 0.3s ease; 
+            color: #fff; 
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5); 
+        }
+        .header.scrolled { box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .nav-link { color: #fff; text-decoration: none; font-weight: 500; transition: color 0.2s ease, transform 0.2s ease; }
+        .nav-link:hover { color: #e0e0e0; transform: translateY(-2px); }
+        .swiper { height: 200px; margin-bottom: 1.5rem; }
+        .swiper-slide { 
+            background-color: #fff; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+            padding: 1rem; 
+            display: flex; 
+            align-items: center; 
+            transition: transform 0.3s ease; 
+        }
+        .swiper-slide:hover { transform: scale(1.02); }
+        .swiper-slide img { max-width: 80px; height: auto; border-radius: 4px; margin-right: 1rem; }
+        .article-card { 
+            border: none; 
+            margin-bottom: 1.5rem; 
+            background-color: #fff; 
+            border-radius: 8px; 
+            padding: 1rem; 
+            transition: transform 0.3s ease, box-shadow 0.3s ease; 
+        }
+        .article-card:hover { transform: translateY(-5px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .article-card img { max-width: 120px; height: auto; border-radius: 4px; transition: opacity 0.3s ease; }
+        .article-card:hover img { opacity: 0.9; }
+        .search-form { max-width: 300px; margin-bottom: 1rem; }
+        .pagination { justify-content: center; margin-top: 1.5rem; }
+        .dropdown-menu { min-width: 200px; }
+        .footer { background-color: #fff; padding: 1rem 0; border-top: 1px solid #ddd; text-align: center; color: #666; }
+        .content-section { 
+            background-color: #fff; 
+            padding: 1.5rem; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+            min-height: 200px; 
+        }
+        h1, h2, h3, h4, h5 { font-weight: 600; }
+        .container { max-width: 1200px; }
+        .error-message { text-align: center; color: #666; padding: 1rem; }
+        .dropdown-submenu .dropdown-menu { top: 0; left: 100%; margin-left: .1rem; }
+        .dropdown-submenu:hover > .dropdown-menu { display: block; }
+        .loading-spinner { text-align: center; padding: 2rem; }
+        .navbar-toggler { border: none; }
+        .navbar-collapse { background-color: rgba(255, 255, 255, 0.95); padding: 1rem; }
+        @media (max-width: 768px) {
+            .header { padding: 0.5rem 0; }
+            h1.h3 { font-size: 1.5rem; }
+            .nav-link { font-size: 0.9rem; padding: 0.5rem; }
+            .swiper { height: 150px; }
+            .swiper-slide img { max-width: 60px; }
+            .article-card { flex-direction: column; }
+            .article-card img { max-width: 100%; margin-bottom: 0.5rem; }
+            .search-form { max-width: 100%; }
+            .content-section { padding: 1rem; }
+            .dropdown-menu { min-width: 150px; font-size: 0.9rem; }
+        }
+        @media (max-width: 576px) {
+            .swiper-slide { flex-direction: column; text-align: center; }
+            .swiper-slide img { margin-right: 0; margin-bottom: 0.5rem; }
+            .article-card img { max-width: 100%; }
+            .pagination { flex-wrap: wrap; }
+            .pagination .page-item { margin: 0.2rem; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header" id="header">
+        <div class="container">
+            <h1 class="h3 mb-0">Portal Berita Dinamis</h1>
+            <nav class="navbar navbar-expand-lg">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <div class="d-flex flex-column flex-lg-row gap-3 align-items-lg-center w-100">
+                        <a href="#about" class="nav-link">About</a>
+                        <a href="#home" class="nav-link">Beranda</a>
+                        <div class="dropdown">
+                            <a class="nav-link dropdown-toggle" href="#berita-pilihan" id="categoryDropdown" data-bs-toggle="dropdown" aria-expanded="false">Berita Pilihan</a>
+                            <ul class="dropdown-menu" aria-labelledby="categoryDropdown">
+                                <li class="dropdown-submenu">
+                                    <a class="dropdown-item dropdown-toggle" href="#" data-category="Nasional">Berita Nasional</a>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="filterByCategory('Nasional', 'Ekonomi')">Ekonomi</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="filterByCategory('Nasional', 'Pendidikan')">Pendidikan</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="filterByCategory('Nasional', 'Lifestyle')">Lifestyle</a></li>
+                                    </ul>
+                                </li>
+                                <li class="dropdown-submenu">
+                                    <a class="dropdown-item dropdown-toggle" href="#" data-category="Daerah">Berita Daerah</a>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="filterByCategory('Daerah', 'Ekonomi')">Ekonomi</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="filterByCategory('Daerah', 'Pendidikan')">Pendidikan</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="filterByCategory('Daerah', 'Lifestyle')">Lifestyle</a></li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+                        <a href="#opini" class="nav-link">Opini</a>
+                        <a href="admin.html" class="nav-link">Admin</a>
+                        <form class="search-form d-flex ms-lg-auto">
+                            <input type="text" class="form-control me-2" id="searchInput" placeholder="Cari berita...">
+                            <button type="submit" class="btn btn-primary btn-sm">Cari</button>
+                        </form>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mt-4">
+        <section id="about" class="content-section mb-4" data-aos="fade-up" data-aos-duration="1000">
+            <h2 class="h4 mb-3">Tentang Kami</h2>
+            <p>Portal Berita Dinamis menyajikan informasi terkini, akurat, dan relevan untuk pembaca di Indonesia. Kami fokus pada jurnalisme berkualitas dengan liputan mendalam dan objektif.</p>
+            <h5 class="mt-4">Visi</h5>
+            <p>Menjadi sumber berita terpercaya yang mengedukasi dan menginspirasi masyarakat.</p>
+            <h5>Tim Kami</h5>
+            <ul>
+                <li>Redaksi: Jurnalis berpengalaman dengan dedikasi pada kebenaran.</li>
+                <li>Teknologi: Pengembang untuk situs cepat dan user-friendly.</li>
+            </ul>
+        </section>
+
+        <section id="home" class="content-section mb-4" data-aos="fade-up" data-aos-duration="1000">
+            <h2 class="h4 mb-3">Beranda</h2>
+            <h5>Topik Hangat</h5>
+            <div class="swiper">
+                <div class="swiper-wrapper" id="topik-slider">
+                    <div class="swiper-slide loading-spinner">Memuat berita...</div>
+                </div>
+                <div class="swiper-button-prev"></div>
+                <div class="swiper-button-next"></div>
+            </div>
+            <h5 class="mt-4">Sekilas Berita</h5>
+            <div id="beranda-articles" class="loading-spinner">Memuat berita...</div>
+        </section>
+
+        <section id="opini" class="content-section mb-4" data-aos="fade-up" data-aos-duration="1000">
+            <h2 class="h4 mb-3">Opini</h2>
+            <div id="opini-list" class="loading-spinner">Memuat opini...</div>
+            <nav aria-label="Pagination">
+                <ul class="pagination" id="opini-pagination"></ul>
+            </nav>
+        </section>
+
+        <section id="berita-pilihan" class="content-section mb-4" data-aos="fade-up" data-aos-duration="1000">
+            <h2 class="h4 mb-3">Berita Pilihan</h2>
+            <div id="article-list" class="loading-spinner">Memuat berita...</div>
+            <nav aria-label="Pagination">
+                <ul class="pagination" id="pagination"></ul>
+            </nav>
+        </section>
+    </main>
+
+    <footer class="footer" data-aos="fade-up" data-aos-duration="1000">
+        <div class="container">
+            <p class="mb-0">&copy; 2025 Portal Berita Dinamis. Hak cipta dilindungi.</p>
+        </div>
+    </footer>
+
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-storage.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/swiper@10.3.1/swiper-bundle.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize Firebase (Ganti dengan config Anda)
+            const firebaseConfig = {
+                apiKey: "YOUR_FIREBASE_API_KEY",
+                authDomain: "your-project-id.firebaseapp.com",
+                projectId: "your-project-id",
+                storageBucket: "your-project-id.appspot.com",
+                messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+                appId: "YOUR_APP_ID"
+            };
+            try {
+                firebase.initializeApp(firebaseConfig);
+            } catch (error) {
+                console.error('Firebase init error:', error);
+                document.querySelectorAll('.loading-spinner').forEach(el => {
+                    el.innerHTML = '<p class="error-message">Gagal memuat data: Konfigurasi Firebase salah.</p>';
+                });
+            }
+            const db = firebase.firestore?.() || {};
+            const storage = firebase.storage?.() || {};
+
+            // Initialize AOS and Swiper
+            try {
+                AOS.init();
+                const swiper = new Swiper('.swiper', {
+                    loop: true,
+                    autoplay: { delay: 3000, disableOnInteraction: false },
+                    navigation: { nextEl: '.swiper-button-prev', prevEl: '.swiper-button-next' },
+                    slidesPerView: 1,
+                    spaceBetween: 10,
+                    breakpoints: {
+                        576: { slidesPerView: 2 },
+                        768: { slidesPerView: 3 },
+                        992: { slidesPerView: 4 }
+                    }
+                });
+            } catch (error) {
+                console.error('AOS/Swiper init error:', error);
+            }
+
+            // NewsAPI Configuration
+            const apiKey = 'YOUR_API_KEY'; // Ganti dengan API key NewsAPI Anda
+            let newsData = [];
+            let opinionData = [];
+            let currentPage = 1;
+            let currentOpiniPage = 1;
+            const itemsPerPage = 5;
+
+            // Header scroll effect
+            window.addEventListener('scroll', () => {
+                const header = document.getElementById('header');
+                header.classList.toggle('scrolled', window.scrollY > 50);
+            });
+
+            // Fetch News from NewsAPI and Firestore
+            async function fetchNews(category = '', subcategory = '') {
+                const articleList = document.getElementById('article-list');
+                const berandaArticles = document.getElementById('beranda-articles');
+                const topikSlider = document.getElementById('topik-slider');
+                try {
+                    // Fetch from NewsAPI
+                    let url = `https://newsapi.org/v2/top-headlines?country=id&apiKey=${apiKey}`;
+                    if (subcategory && subcategory !== 'Opini') {
+                        url = `https://newsapi.org/v2/everything?q=${subcategory.toLowerCase()}&language=id&apiKey=${apiKey}`;
+                    }
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error('NewsAPI request failed');
+                    const data = await response.json();
+                    const realtimeNews = data.articles
+                        .filter(article => article.title && article.description && article.url)
+                        .map(article => ({
+                            id: `realtime-${Date.now()}-${Math.random()}`,
+                            title: article.title,
+                            description: article.description,
+                            url: article.url,
+                            urlToImage: article.urlToImage || 'https://via.placeholder.com/80x80?text=No+Image',
+                            views: Math.floor(Math.random() * 1000) + 100,
+                            category: category || 'Nasional',
+                            subcategory: subcategory || 'General',
+                            isRealtime: true,
+                            createdAt: new Date()
+                        }));
+
+                    // Fetch from Firestore
+                    let localNews = [];
+                    try {
+                        const newsSnapshot = await db.collection('news').get();
+                        localNews = newsSnapshot.docs.map(doc => ({
+                            id: doc.id,
+                            ...doc.data(),
+                            createdAt: doc.data().createdAt.toDate()
+                        })).filter(n => n.subcategory !== 'Opini');
+                    } catch (error) {
+                        console.error('Firestore fetch error:', error);
+                    }
+
+                    // Combine and cache
+                    newsData = [...realtimeNews, ...localNews];
+                    localStorage.setItem('newsDataCache', JSON.stringify(localNews));
+                    renderAll();
+                } catch (error) {
+                    console.error('Error fetching news:', error);
+                    newsData = JSON.parse(localStorage.getItem('newsDataCache')) || [
+                        { id: 'dummy1', title: "Satu Tahun Prabowo-Gibran", description: "Laporan tentang capaian pemerintahan.", url: "#", urlToImage: "https://via.placeholder.com/80x80?text=Topik1", views: 1000, category: "Nasional", subcategory: "Ekonomi", createdAt: new Date() },
+                        { id: 'dummy2', title: "Dana Daerah Mengendap", description: "Analisis keuangan daerah.", url: "#", urlToImage: "https://via.placeholder.com/80x80?text=Topik2", views: 800, category: "Daerah", subcategory: "Ekonomi", createdAt: new Date() },
+                        { id: 'dummy3', title: "Hari Santri 2025", description: "Perayaan dan maknanya.", url: "#", urlToImage: "https://via.placeholder.com/80x80?text=Topik3", views: 600, category: "Nasional", subcategory: "Pendidikan", createdAt: new Date() }
+                    ];
+                    articleList.innerHTML = '<p class="error-message">Gagal memuat berita dari NewsAPI. Menampilkan data lokal.</p>';
+                    berandaArticles.innerHTML = '<p class="error-message">Gagal memuat berita dari NewsAPI. Menampilkan data lokal.</p>';
+                    topikSlider.innerHTML = '<p class="error-message">Gagal memuat berita dari NewsAPI. Menampilkan data lokal.</p>';
+                    renderAll();
+                }
+            }
+
+            // Fetch Opinions from Firestore
+            async function fetchOpinions() {
+                const opiniList = document.getElementById('opini-list');
+                try {
+                    const snapshot = await db.collection('opinions').get();
+                    opinionData = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data(),
+                        createdAt: doc.data().createdAt.toDate()
+                    }));
+                    localStorage.setItem('opinionDataCache', JSON.stringify(opinionData));
+                    renderOpini();
+                } catch (error) {
+                    console.error('Error fetching opinions:', error);
+                    opinionData = JSON.parse(localStorage.getItem('opinionDataCache')) || [
+                        { id: 'opini1', title: "Opini: Masa Depan Ekonomi Indonesia", description: "Pandangan tentang pertumbuhan ekonomi.", url: "#", urlToImage: "https://via.placeholder.com/80x80?text=Opini1", views: 500, createdAt: new Date() },
+                        { id: 'opini2', title: "Opini: Reformasi Pendidikan", description: "Tantangan dan solusi pendidikan.", url: "#", urlToImage: "https://via.placeholder.com/80x80?text=Opini2", views: 400, createdAt: new Date() }
+                    ];
+                    opiniList.innerHTML = '<p class="error-message">Gagal memuat opini dari Firestore. Menampilkan data lokal.</p>';
+                    renderOpini();
+                }
+            }
+
+            // Render Slider (Topik Hangat)
+            function renderSlider() {
+                const topikSlider = document.getElementById('topik-slider');
+                topikSlider.innerHTML = newsData.length ? '' : '<div class="swiper-slide error-message">Belum ada berita tersedia.</div>';
+                newsData.slice(0, 5).forEach((article, index) => {
+                    const slide = document.createElement('div');
+                    slide.className = 'swiper-slide';
+                    slide.setAttribute('data-aos', 'fade-right');
+                    slide.setAttribute('data-aos-delay', index * 100);
+                    slide.innerHTML = `
+                        <img src="${article.urlToImage}" alt="${article.title}" onerror="this.src='https://via.placeholder.com/80x80?text=No+Image'">
+                        <span>${article.title}</span>
+                    `;
+                    topikSlider.appendChild(slide);
+                });
+                try {
+                    swiper.update();
+                } catch (error) {
+                    console.error('Swiper update error:', error);
+                }
+            }
+
+            // Render Beranda Articles (Sekilas Berita)
+            function renderBerandaArticles() {
+                const berandaArticles = document.getElementById('beranda-articles');
+                berandaArticles.innerHTML = newsData.length ? '' : '<p class="error-message">Belum ada berita tersedia.</p>';
+                newsData.slice(0, 2).forEach((article, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'article-card d-flex';
+                    card.setAttribute('data-aos', 'fade-up');
+                    card.setAttribute('data-aos-delay', index * 100);
+                    card.innerHTML = `
+                        <img src="${article.urlToImage}" alt="${article.title}" class="me-3" onerror="this.src='https://via.placeholder.com/80x80?text=No+Image'">
+                        <div>
+                            <h5 class="mb-1"><a href="${article.url}" class="text-dark text-decoration-none">${article.title}</a></h5>
+                            <p class="text-muted small">${article.description || 'Deskripsi tidak tersedia.'}</p>
+                            <p class="text-muted small">Dibaca: ${article.views || 0} kali</p>
+                        </div>
+                    `;
+                    berandaArticles.appendChild(card);
+                });
+            }
+
+            // Render Articles (Berita Pilihan)
+            function renderArticles(filteredData = newsData) {
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = startIndex + itemsPerPage;
+                const paginatedData = filteredData.slice(startIndex, endIndex);
+                const articleList = document.getElementById('article-list');
+                articleList.innerHTML = paginatedData.length ? '' : '<p class="error-message">Tidak ada hasil untuk halaman ini.</p>';
+                paginatedData.forEach((article, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'article-card d-flex';
+                    card.setAttribute('data-aos', 'fade-up');
+                    card.setAttribute('data-aos-delay', index * 100);
+                    card.innerHTML = `
+                        <img src="${article.urlToImage}" alt="${article.title}" class="me-3" onerror="this.src='https://via.placeholder.com/80x80?text=No+Image'">
+                        <div>
+                            <h5 class="mb-1"><a href="${article.url}" class="text-dark text-decoration-none">${article.title}</a></h5>
+                            <p class="text-muted small">${article.description || 'Deskripsi tidak tersedia.'}</p>
+                            <p class="text-muted small">Dibaca: ${article.views || 0} kali</p>
+                        </div>
+                    `;
+                    articleList.appendChild(card);
+                });
+                renderPagination(filteredData.length, 'pagination');
+            }
+
+            // Render Opini
+            function renderOpini() {
+                const startIndex = (currentOpiniPage - 1) * itemsPerPage;
+                const endIndex = startIndex + itemsPerPage;
+                const paginatedData = opinionData.slice(startIndex, endIndex);
+                const opiniList = document.getElementById('opini-list');
+                opiniList.innerHTML = paginatedData.length ? '' : '<p class="error-message">Belum ada opini tersedia.</p>';
+                paginatedData.forEach((article, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'article-card d-flex';
+                    card.setAttribute('data-aos', 'fade-up');
+                    card.setAttribute('data-aos-delay', index * 100);
+                    card.innerHTML = `
+                        <img src="${article.urlToImage}" alt="${article.title}" class="me-3" onerror="this.src='https://via.placeholder.com/80x80?text=No+Image'">
+                        <div>
+                            <h5 class="mb-1"><a href="${article.url}" class="text-dark text-decoration-none">${article.title}</a></h5>
+                            <p class="text-muted small">${article.description || 'Deskripsi tidak tersedia.'}</p>
+                            <p class="text-muted small">Dibaca: ${article.views || 0} kali</p>
+                        </div>
+                    `;
+                    opiniList.appendChild(card);
+                });
+                renderPagination(opinionData.length, 'opini-pagination');
+            }
+
+            // Render Pagination
+            function renderPagination(totalItems, paginationId) {
+                const totalPages = Math.ceil(totalItems / itemsPerPage);
+                const pagination = document.getElementById(paginationId);
+                pagination.innerHTML = '';
+                if (totalPages <= 1) return;
+                for (let i = 1; i <= totalPages; i++) {
+                    const li = document.createElement('li');
+                    li.className = `page-item ${i === (paginationId === 'pagination' ? currentPage : currentOpiniPage) ? 'active' : ''}`;
+                    li.innerHTML = `<a class="page-link" href="#" onclick="${paginationId === 'pagination' ? 'changePage' : 'changeOpiniPage'}(${i})">${i}</a>`;
+                    pagination.appendChild(li);
+                }
+            }
+
+            // Change Page
+            window.changePage = function(page) {
+                currentPage = page;
+                renderArticles();
+            };
+
+            window.changeOpiniPage = function(page) {
+                currentOpiniPage = page;
+                renderOpini();
+            };
+
+            // Filter by Category/Subcategory
+            window.filterByCategory = function(category, subcategory) {
+                document.getElementById('categoryDropdown').textContent = `${category} - ${subcategory}`;
+                fetchNews(category, subcategory);
+            };
+
+            // Search Form
+            document.querySelector('.search-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const query = document.getElementById('searchInput').value.toLowerCase();
+                const filtered = query ? newsData.filter(article => article.title.toLowerCase().includes(query)) : newsData;
+                currentPage = 1;
+                renderArticles(filtered);
+            });
+
+            // Render All Sections
+            function renderAll() {
+                renderSlider();
+                renderBerandaArticles();
+                renderArticles();
+            }
+
+            // Dropdown Submenu Hover
+            document.querySelectorAll('.dropdown-submenu').forEach(element => {
+                element.addEventListener('mouseover', function() {
+                    this.querySelector('.dropdown-menu').classList.add('show');
+                });
+                element.addEventListener('mouseout', function() {
+                    this.querySelector('.dropdown-menu').classList.remove('show');
+                });
+            });
+
+            // Load Data on Page Load
+            fetchNews();
+            fetchOpinions();
+        });
+    </script>
+</body>
+</html>

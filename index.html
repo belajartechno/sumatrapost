@@ -15,6 +15,7 @@
             color: #333; 
             scroll-behavior: smooth; 
             overflow-x: hidden;
+            margin: 0;
         }
         .header { 
             background: url(${localStorage.getItem('heroBackground') || 'https://via.placeholder.com/1200x200?text=Hero+Background'}) center/cover no-repeat; 
@@ -28,8 +29,8 @@
             text-shadow: 0 1px 2px rgba(0,0,0,0.5); 
         }
         .header.scrolled { box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .nav-link { color: #fff; text-decoration: none; font-weight: 500; transition: color 0.2s ease, transform 0.2s ease; }
-        .nav-link:hover { color: #e0e0e0; transform: translateY(-2px); }
+        .nav-link { color: #fff; text-decoration: none; font-weight: 500; transition: color 0.2s ease; }
+        .nav-link:hover { color: #000000; }
         .swiper { height: 200px; margin-bottom: 1.5rem; }
         .swiper-slide { 
             background-color: #fff; 
@@ -39,6 +40,7 @@
             display: flex; 
             align-items: center; 
             transition: transform 0.3s ease; 
+            touch-action: pan-y;
         }
         .swiper-slide:hover { transform: scale(1.02); }
         .swiper-slide img { max-width: 80px; height: auto; border-radius: 4px; margin-right: 1rem; }
@@ -51,8 +53,7 @@
             transition: transform 0.3s ease, box-shadow 0.3s ease; 
         }
         .article-card:hover { transform: translateY(-5px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
-        .article-card img { max-width: 120px; height: auto; border-radius: 4px; transition: opacity 0.3s ease; }
-        .article-card:hover img { opacity: 0.9; }
+        .article-card img { max-width: 120px; height: auto; border-radius: 4px; }
         .search-form { max-width: 300px; margin-bottom: 1rem; }
         .pagination { justify-content: center; margin-top: 1.5rem; }
         .dropdown-menu { min-width: 200px; }
@@ -67,9 +68,9 @@
         h1, h2, h3, h4, h5 { font-weight: 600; }
         .container { max-width: 1200px; }
         .error-message { text-align: center; color: #666; padding: 1rem; }
+        .loading-spinner { text-align: center; padding: 2rem; font-style: italic; }
         .dropdown-submenu .dropdown-menu { top: 0; left: 100%; margin-left: .1rem; }
         .dropdown-submenu:hover > .dropdown-menu { display: block; }
-        .loading-spinner { text-align: center; padding: 2rem; }
         .navbar-toggler { border: none; }
         .navbar-collapse { background-color: rgba(255, 255, 255, 0.95); padding: 1rem; }
         @media (max-width: 768px) {
@@ -188,38 +189,46 @@
         </div>
     </footer>
 
-    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-storage.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-storage-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="https://unpkg.com/swiper@10.3.1/swiper-bundle.min.js"></script>
     <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, initializing application...');
+
             // Initialize Firebase (Ganti dengan config Anda)
             const firebaseConfig = {
-                apiKey: "AIzaSyDeh5U6XY3LB2WngKgBXxTZ1mKUC_tZffE",
-                authDomain: "sumatrapost-2a629.firebaseapp.com",
-                projectId: "sumatrapost-2a629",
-                storageBucket: "sumatrapost-2a629.firebasestorage.app",
-                messagingSenderId: "470408679333",
-                appId: "1:470408679333:web:2787f03e2358a30e87e24c",
+                apiKey: "YOUR_FIREBASE_API_KEY",
+                authDomain: "your-project-id.firebaseapp.com",
+                projectId: "your-project-id",
+                storageBucket: "your-project-id.appspot.com",
+                messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+                appId: "YOUR_APP_ID"
             };
+
+            let db, storage;
             try {
                 firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                storage = firebase.storage();
+                console.log('Firebase initialized successfully');
             } catch (error) {
-                console.error('Firebase init error:', error);
+                console.error('Firebase initialization error:', error);
                 document.querySelectorAll('.loading-spinner').forEach(el => {
-                    el.innerHTML = '<p class="error-message">Gagal memuat data: Konfigurasi Firebase salah.</p>';
+                    el.innerHTML = '<p class="error-message">Gagal menginisialisasi Firebase. Periksa konfigurasi atau koneksi.</p>';
                 });
+                return; // Stop execution if Firebase fails
             }
-            const db = firebase.firestore?.() || {};
-            const storage = firebase.storage?.() || {};
 
             // Initialize AOS and Swiper
+            let swiper;
             try {
-                AOS.init();
-                const swiper = new Swiper('.swiper', {
+                AOS.init({ once: true });
+                console.log('AOS initialized');
+                swiper = new Swiper('.swiper', {
                     loop: true,
                     autoplay: { delay: 3000, disableOnInteraction: false },
                     navigation: { nextEl: '.swiper-button-prev', prevEl: '.swiper-button-next' },
@@ -231,8 +240,9 @@
                         992: { slidesPerView: 4 }
                     }
                 });
+                console.log('Swiper initialized');
             } catch (error) {
-                console.error('AOS/Swiper init error:', error);
+                console.error('AOS/Swiper initialization error:', error);
             }
 
             // NewsAPI Configuration
@@ -246,7 +256,7 @@
             // Header scroll effect
             window.addEventListener('scroll', () => {
                 const header = document.getElementById('header');
-                header.classList.toggle('scrolled', window.scrollY > 50);
+                if (header) header.classList.toggle('scrolled', window.scrollY > 50);
             });
 
             // Fetch News from NewsAPI and Firestore
@@ -255,13 +265,13 @@
                 const berandaArticles = document.getElementById('beranda-articles');
                 const topikSlider = document.getElementById('topik-slider');
                 try {
-                    // Fetch from NewsAPI
+                    console.log(`Fetching news for category: ${category}, subcategory: ${subcategory}`);
                     let url = `https://newsapi.org/v2/top-headlines?country=id&apiKey=${apiKey}`;
                     if (subcategory && subcategory !== 'Opini') {
                         url = `https://newsapi.org/v2/everything?q=${subcategory.toLowerCase()}&language=id&apiKey=${apiKey}`;
                     }
                     const response = await fetch(url);
-                    if (!response.ok) throw new Error('NewsAPI request failed');
+                    if (!response.ok) throw new Error(`NewsAPI request failed: ${response.statusText}`);
                     const data = await response.json();
                     const realtimeNews = data.articles
                         .filter(article => article.title && article.description && article.url)
@@ -277,6 +287,7 @@
                             isRealtime: true,
                             createdAt: new Date()
                         }));
+                    console.log(`Fetched ${realtimeNews.length} articles from NewsAPI`);
 
                     // Fetch from Firestore
                     let localNews = [];
@@ -287,6 +298,7 @@
                             ...doc.data(),
                             createdAt: doc.data().createdAt.toDate()
                         })).filter(n => n.subcategory !== 'Opini');
+                        console.log(`Fetched ${localNews.length} articles from Firestore`);
                     } catch (error) {
                         console.error('Firestore fetch error:', error);
                     }
@@ -313,6 +325,7 @@
             async function fetchOpinions() {
                 const opiniList = document.getElementById('opini-list');
                 try {
+                    console.log('Fetching opinions from Firestore');
                     const snapshot = await db.collection('opinions').get();
                     opinionData = snapshot.docs.map(doc => ({
                         id: doc.id,
@@ -320,6 +333,7 @@
                         createdAt: doc.data().createdAt.toDate()
                     }));
                     localStorage.setItem('opinionDataCache', JSON.stringify(opinionData));
+                    console.log(`Fetched ${opinionData.length} opinions from Firestore`);
                     renderOpini();
                 } catch (error) {
                     console.error('Error fetching opinions:', error);
@@ -335,6 +349,10 @@
             // Render Slider (Topik Hangat)
             function renderSlider() {
                 const topikSlider = document.getElementById('topik-slider');
+                if (!topikSlider) {
+                    console.error('Topik slider element not found');
+                    return;
+                }
                 topikSlider.innerHTML = newsData.length ? '' : '<div class="swiper-slide error-message">Belum ada berita tersedia.</div>';
                 newsData.slice(0, 5).forEach((article, index) => {
                     const slide = document.createElement('div');
@@ -349,6 +367,7 @@
                 });
                 try {
                     swiper.update();
+                    console.log('Swiper updated');
                 } catch (error) {
                     console.error('Swiper update error:', error);
                 }
@@ -357,6 +376,10 @@
             // Render Beranda Articles (Sekilas Berita)
             function renderBerandaArticles() {
                 const berandaArticles = document.getElementById('beranda-articles');
+                if (!berandaArticles) {
+                    console.error('Beranda articles element not found');
+                    return;
+                }
                 berandaArticles.innerHTML = newsData.length ? '' : '<p class="error-message">Belum ada berita tersedia.</p>';
                 newsData.slice(0, 2).forEach((article, index) => {
                     const card = document.createElement('div');
@@ -377,10 +400,14 @@
 
             // Render Articles (Berita Pilihan)
             function renderArticles(filteredData = newsData) {
+                const articleList = document.getElementById('article-list');
+                if (!articleList) {
+                    console.error('Article list element not found');
+                    return;
+                }
                 const startIndex = (currentPage - 1) * itemsPerPage;
                 const endIndex = startIndex + itemsPerPage;
                 const paginatedData = filteredData.slice(startIndex, endIndex);
-                const articleList = document.getElementById('article-list');
                 articleList.innerHTML = paginatedData.length ? '' : '<p class="error-message">Tidak ada hasil untuk halaman ini.</p>';
                 paginatedData.forEach((article, index) => {
                     const card = document.createElement('div');
@@ -402,10 +429,14 @@
 
             // Render Opini
             function renderOpini() {
+                const opiniList = document.getElementById('opini-list');
+                if (!opiniList) {
+                    console.error('Opini list element not found');
+                    return;
+                }
                 const startIndex = (currentOpiniPage - 1) * itemsPerPage;
                 const endIndex = startIndex + itemsPerPage;
                 const paginatedData = opinionData.slice(startIndex, endIndex);
-                const opiniList = document.getElementById('opini-list');
                 opiniList.innerHTML = paginatedData.length ? '' : '<p class="error-message">Belum ada opini tersedia.</p>';
                 paginatedData.forEach((article, index) => {
                     const card = document.createElement('div');
@@ -427,8 +458,12 @@
 
             // Render Pagination
             function renderPagination(totalItems, paginationId) {
-                const totalPages = Math.ceil(totalItems / itemsPerPage);
                 const pagination = document.getElementById(paginationId);
+                if (!pagination) {
+                    console.error(`Pagination element ${paginationId} not found`);
+                    return;
+                }
+                const totalPages = Math.ceil(totalItems / itemsPerPage);
                 pagination.innerHTML = '';
                 if (totalPages <= 1) return;
                 for (let i = 1; i <= totalPages; i++) {
@@ -452,18 +487,22 @@
 
             // Filter by Category/Subcategory
             window.filterByCategory = function(category, subcategory) {
-                document.getElementById('categoryDropdown').textContent = `${category} - ${subcategory}`;
+                const dropdown = document.getElementById('categoryDropdown');
+                if (dropdown) dropdown.textContent = `${category} - ${subcategory}`;
                 fetchNews(category, subcategory);
             };
 
             // Search Form
-            document.querySelector('.search-form').addEventListener('submit', function(e) {
-                e.preventDefault();
-                const query = document.getElementById('searchInput').value.toLowerCase();
-                const filtered = query ? newsData.filter(article => article.title.toLowerCase().includes(query)) : newsData;
-                currentPage = 1;
-                renderArticles(filtered);
-            });
+            const searchForm = document.querySelector('.search-form');
+            if (searchForm) {
+                searchForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const query = document.getElementById('searchInput')?.value.toLowerCase() || '';
+                    const filtered = query ? newsData.filter(article => article.title.toLowerCase().includes(query)) : newsData;
+                    currentPage = 1;
+                    renderArticles(filtered);
+                });
+            }
 
             // Render All Sections
             function renderAll() {
@@ -475,10 +514,17 @@
             // Dropdown Submenu Hover
             document.querySelectorAll('.dropdown-submenu').forEach(element => {
                 element.addEventListener('mouseover', function() {
-                    this.querySelector('.dropdown-menu').classList.add('show');
+                    this.querySelector('.dropdown-menu')?.classList.add('show');
                 });
                 element.addEventListener('mouseout', function() {
-                    this.querySelector('.dropdown-menu').classList.remove('show');
+                    this.querySelector('.dropdown-menu')?.classList.remove('show');
+                });
+                element.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    const dropdownMenu = this.querySelector('.dropdown-menu');
+                    if (dropdownMenu) {
+                        dropdownMenu.classList.toggle('show');
+                    }
                 });
             });
 
